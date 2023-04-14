@@ -31,7 +31,8 @@ unsigned int loadCubemap(vector<std::string> faces);
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
-
+bool flashlight = true;
+bool blinn = true;
 // settings
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
@@ -122,7 +123,7 @@ int main() {
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Comuter graphics project", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Computer graphics project", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -144,7 +145,7 @@ int main() {
     }
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_vertically_on_load(true);
 
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
@@ -169,12 +170,8 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-
-//    Shader shader("resources/shaders/plain.vs", "resources/shaders/plain.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
-    Shader shader("resources/shaders/shader.vs","resources/shaders/shader.fs");
-
-    Shader pointShader("resources/shaders/shad.vs","resources/shaders/shad.fs");
+    Shader discard("resources/shaders/discard.vs","resources/shaders/discard.fs");
 
     // load models
     // -----------
@@ -184,12 +181,26 @@ int main() {
     Model windmill("resources/objects/kuca5/Windmill.obj");
     windmill.SetShaderTextureNamePrefix("Windmill.");
 
-    Model trees("resources/objects/Tree/Tree.obj");
-    trees.SetShaderTextureNamePrefix("Tree.");
+    Model trees("resources/objects/tree/3d-model.obj");
+    trees.SetShaderTextureNamePrefix("material.");
 
-    Model trees2("resources/objects/Tree/Tree.obj");
-    trees2.SetShaderTextureNamePrefix("Tree.");
+    Model trees2("resources/objects/tree/3d-model.obj");
+    trees2.SetShaderTextureNamePrefix("material.");
 
+    Model trees3("resources/objects/tree/3d-model.obj");
+    trees3.SetShaderTextureNamePrefix("material.");
+
+    Model trees4("resources/objects/tree/3d-model.obj");
+    trees4.SetShaderTextureNamePrefix("material.");
+
+    Model trees5("resources/objects/tree/3d-model.obj");
+    trees5.SetShaderTextureNamePrefix("material.");
+
+    Model trees6("resources/objects/tree/3d-model.obj");
+    trees6.SetShaderTextureNamePrefix("material.");
+
+    Model lantern("resources/objects/lantern/untitled.obj");
+    lantern.SetShaderTextureNamePrefix("material.");
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
@@ -255,6 +266,17 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
+    float transparentVertices[] = {
+        // positions         // texture Coords
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+        1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
     // plain VAO
 
     unsigned int VBO, plainVAO;
@@ -287,7 +309,20 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
     unsigned int plainTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass_blending.png").c_str());
 
     vector<std::string> faces
             {
@@ -300,10 +335,28 @@ int main() {
             };
     unsigned int cubemapTexture = loadCubemap(faces);
 
+    vector<glm::vec3> grassLocation
+            {
+                    glm::vec3(-0.5f, -0.97f, -0.48f),
+                    glm::vec3( 0.5f, -0.97f, 0.51f),
+                    glm::vec3( 0.0f, -0.97f, 0.7f),
+                    glm::vec3(-0.3f, -0.97f, -0.3f),
+                    glm::vec3 (0.5f, -0.97f, -0.6f),
+                    glm::vec3(-0.48f, -0.97f, -0.5f),
+                    glm::vec3( 0.51f, -0.97f, 0.5f),
+                    glm::vec3( 0.7f, -0.97f, 0.0f),
+                    glm::vec3(0.3f, -0.97f, 0.3f),
+                    glm::vec3 (-0.6f, -0.97f, -0.5f)
+            };
+
     // shader configuration
     // --------------------
-    shader.use();
-    shader.setInt("texture1", 0);
+
+    discard.use();
+    discard.setInt("texture1",0);
+
+    ourShader.use();
+    ourShader.setInt("texture1",0);
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
@@ -330,32 +383,35 @@ int main() {
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // be sure to activate shader when setting uniforms/drawing objects
-        //shader.use();
-        /*shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-        shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        shader.setVec3("viewPos", programState->camera.Position);*/
+        discard.use();
+        glm::mat4 projection_grass = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view_grass = programState->camera.GetViewMatrix();
+        glm::mat4 model_grass = glm::mat4(1.0f);
+        discard.setMat4("projection", projection_grass);
+        discard.setMat4("view", view_grass);
 
-        /*shader.setVec3("light.position", programState->camera.Position);
-        shader.setVec3("light.direction", programState->camera.Front);
-        shader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-        shader.setVec3("viewPos", programState->camera.Position);
-*/
-        // material properties
-        //shader.setFloat("material.shininess", 32.0f);
+        glBindVertexArray(transparentVAO);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        for (unsigned int i = 0; i < grassLocation.size(); i++)
+        {
+            model_grass = glm::mat4(1.0f);
+            model_grass = glm::translate(model_grass, grassLocation[i]);
+            model_grass = glm::scale(model_grass,glm::vec3(glm::vec3(0.05f)));
+            discard.setMat4("model", model_grass);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
+        ourShader.setBool("blinn",blinn);
         ourShader.setVec3("viewPos", programState->camera.Position);
 
         ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
         ourShader.setVec3("dirLight.ambient", 0.001f, 0.001f, 0.001f);
         ourShader.setVec3("dirLight.diffuse", 0.1f, 0.1f, 0.1f);
         ourShader.setVec3("dirLight.specular", 0.1f, 0.1f, 0.1f);
-        //pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
-        pointLight.position = glm::vec3(0.0f, -0.92f, -0.40f);
+
+        pointLight.position = glm::vec3(0.0f, -0.97f, 0.0f);
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -364,24 +420,34 @@ int main() {
         ourShader.setFloat("pointLight.linear", pointLight.linear);
         ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
         ourShader.setVec3("viewPosition", programState->camera.Position);
-        ourShader.setFloat("material.shininess", 32.0f);
+        ourShader.setFloat("material.shininess", 8.0f);
 
-        ourShader.setVec3("spotLight.position", programState->camera.Position);
-        ourShader.setVec3("spotLight.direction", programState->camera.Front);
-        ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-        ourShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        ourShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-        ourShader.setFloat("spotLight.constant", 1.0f);
-        ourShader.setFloat("spotLight.linear", 0.09f);
-        ourShader.setFloat("spotLight.quadratic", 0.032f);
-        ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(6.25f)));
-        ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(7.5f)));
+        if(flashlight) {
+            ourShader.setVec3("spotLight.position", programState->camera.Position);
+            ourShader.setVec3("spotLight.direction", programState->camera.Front);
+            ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+            ourShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+            ourShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+            ourShader.setFloat("spotLight.constant", 1.0f);
+            ourShader.setFloat("spotLight.linear", 0.09f);
+            ourShader.setFloat("spotLight.quadratic", 0.032f);
+            ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(6.25f)));
+            ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(7.5f)));
+        }
+        else {
+            ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+            ourShader.setVec3("spotLight.diffuse", 0.0f, 0.0f, 0.0f);
+            ourShader.setVec3("spotLight.specular", 0.0f, 0.0f, 0.0f);
+        }
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),(float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
@@ -399,26 +465,63 @@ int main() {
         ourShader.setMat4("model",modelWindmill);
         windmill.Draw(ourShader);
 
+        glDisable(GL_CULL_FACE);
+
         glm::mat4 modelTrees = glm::mat4(1.0f);
-        modelTrees = glm::translate(modelTrees,glm::vec3(0.5,-1.0f,0.4));
-        modelTrees = glm::scale(modelTrees,glm::vec3(0.1f));
+        modelTrees = glm::translate(modelTrees,glm::vec3(0.6,-1.0f,-0.5));
+        modelTrees = glm::scale(modelTrees,glm::vec3(0.002f));
         modelTrees = glm::rotate(modelTrees,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
         ourShader.setMat4("model",modelTrees);
         trees.Draw(ourShader);
 
         glm::mat4 modelTrees2 = glm::mat4(1.0f);
-        modelTrees2 = glm::translate(modelTrees2,glm::vec3(-0.5,-1.0f,0.4));
-        modelTrees2 = glm::scale(modelTrees2,glm::vec3(0.1f));
+        modelTrees2 = glm::translate(modelTrees2,glm::vec3(-0.784,-1.0f,-0.02));
+        modelTrees2 = glm::scale(modelTrees2,glm::vec3(0.002f));
         modelTrees2 = glm::rotate(modelTrees2,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
         ourShader.setMat4("model",modelTrees2);
         trees2.Draw(ourShader);
 
+        glm::mat4 modelTrees3 = glm::mat4(1.0f);
+        modelTrees3 = glm::translate(modelTrees3,glm::vec3(0.3,-1.0f,0.4));
+        modelTrees3 = glm::scale(modelTrees3,glm::vec3(0.002f));
+        modelTrees3 = glm::rotate(modelTrees3,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
+        ourShader.setMat4("model",modelTrees3);
+        trees3.Draw(ourShader);
+
+        glm::mat4 modelTrees4 = glm::mat4(1.0f);
+        modelTrees4 = glm::translate(modelTrees4,glm::vec3(-0.5,-1.0f,0.75));
+        modelTrees4 = glm::scale(modelTrees4,glm::vec3(0.002f));
+        modelTrees4 = glm::rotate(modelTrees4,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
+        ourShader.setMat4("model",modelTrees4);
+        trees4.Draw(ourShader);
+
+        glm::mat4 modelTrees5 = glm::mat4(1.0f);
+        modelTrees5 = glm::translate(modelTrees5,glm::vec3(0.7,-1.0f,0.8));
+        modelTrees5 = glm::scale(modelTrees5,glm::vec3(0.002f));
+        modelTrees5 = glm::rotate(modelTrees5,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
+        ourShader.setMat4("model",modelTrees5);
+        trees5.Draw(ourShader);
+
+        glm::mat4 modelTrees6 = glm::mat4(1.0f);
+        modelTrees6 = glm::translate(modelTrees6,glm::vec3(-0.32,-1.0f,-0.9));
+        modelTrees6 = glm::scale(modelTrees6,glm::vec3(0.002f));
+        modelTrees6 = glm::rotate(modelTrees6,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
+        ourShader.setMat4("model",modelTrees6);
+        trees6.Draw(ourShader);
+
+        glm::mat4 modelLantern = glm::mat4(1.0f);
+        modelLantern = glm::translate(modelLantern,glm::vec3(-0.0,-1.0f,-0.0));
+        modelLantern = glm::scale(modelLantern,glm::vec3(0.007f));
+        modelLantern = glm::rotate(modelLantern,glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0));
+        ourShader.setMat4("model",modelLantern);
+        lantern.Draw(ourShader);
+
         glm::mat4 model_2 = glm::mat4(1.0f);
         glm::mat4 view_2 = programState->camera.GetViewMatrix();
         glm::mat4 projection_2 = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        shader.setMat4("model", model_2);
-        shader.setMat4("view", view_2);
-        shader.setMat4("projection", projection_2);
+        ourShader.setMat4("model", model_2);
+        ourShader.setMat4("view", view_2);
+        ourShader.setMat4("projection", projection_2);
 
         // plain
         glBindVertexArray(plainVAO);
@@ -564,6 +667,15 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+
+    if (key == GLFW_KEY_F && action == GLFW_PRESS){
+        flashlight = !flashlight;
+    }
+
+    if (key == GLFW_KEY_B && action == GLFW_PRESS){
+        blinn = !blinn;
+    }
+
 }
 
 unsigned int loadTexture(char const * path)
