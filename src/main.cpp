@@ -322,7 +322,7 @@ int main() {
     glBindVertexArray(0);
 
     unsigned int plainTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass_blending.png").c_str());
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass_blending2.png").c_str());
 
     vector<std::string> faces
             {
@@ -337,16 +337,16 @@ int main() {
 
     vector<glm::vec3> grassLocation
             {
-                    glm::vec3(-0.5f, -0.97f, -0.48f),
-                    glm::vec3( 0.5f, -0.97f, 0.51f),
-                    glm::vec3( 0.0f, -0.97f, 0.7f),
-                    glm::vec3(-0.3f, -0.97f, -0.3f),
-                    glm::vec3 (0.5f, -0.97f, -0.6f),
-                    glm::vec3(-0.48f, -0.97f, -0.5f),
-                    glm::vec3( 0.51f, -0.97f, 0.5f),
-                    glm::vec3( 0.7f, -0.97f, 0.0f),
-                    glm::vec3(0.3f, -0.97f, 0.3f),
-                    glm::vec3 (-0.6f, -0.97f, -0.5f)
+                    glm::vec3(-0.5f, -0.95f, -0.48f),
+                    glm::vec3( 0.5f, -0.95f, 0.51f),
+                    glm::vec3( 0.0f, -0.95f, 0.7f),
+                    glm::vec3(-0.3f, -0.95f, -0.3f),
+                    glm::vec3 (0.5f, -0.95f, -0.6f),
+                    glm::vec3(-0.48f, -0.95f, -0.5f),
+                    glm::vec3( 0.51f, -0.95f, 0.5f),
+                    glm::vec3( 0.7f, -0.95f, 0.0f),
+                    glm::vec3(0.3f, -0.95f, 0.3f),
+                    glm::vec3 (-0.6f, -0.95f, -0.5f)
             };
 
     // shader configuration
@@ -396,7 +396,7 @@ int main() {
         {
             model_grass = glm::mat4(1.0f);
             model_grass = glm::translate(model_grass, grassLocation[i]);
-            model_grass = glm::scale(model_grass,glm::vec3(glm::vec3(0.05f)));
+            model_grass = glm::scale(model_grass,glm::vec3(glm::vec3(0.2f)));
             discard.setMat4("model", model_grass);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
@@ -699,8 +699,8 @@ unsigned int loadTexture(char const * path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
