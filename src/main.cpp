@@ -1,7 +1,3 @@
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -37,7 +33,7 @@ bool flashlight = true;
 bool blinn = true;
 
 bool bloom = true;
-bool bloomKeyPressed = false;
+
 float exposure = 1.0f;
 // settings
 const unsigned int SCR_WIDTH = 1600;
@@ -66,54 +62,16 @@ struct PointLight {
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
-    bool ImGuiEnabled = false;
+
     Camera camera;
-    bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
+
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
-
-    void SaveToFile(std::string filename);
-
-    void LoadFromFile(std::string filename);
 };
-
-void ProgramState::SaveToFile(std::string filename) {
-    std::ofstream out(filename);
-    out << clearColor.r << '\n'
-        << clearColor.g << '\n'
-        << clearColor.b << '\n'
-        << ImGuiEnabled << '\n';
-    /*
-    << camera.Position.x << '\n'
-    << camera.Position.y << '\n'
-    << camera.Position.z << '\n'
-    << camera.Front.x << '\n'
-    << camera.Front.y << '\n'
-    << camera.Front.z << '\n';*/
-}
-
-void ProgramState::LoadFromFile(std::string filename) {
-    std::ifstream in(filename);
-    if (in) {
-        in >> clearColor.r
-           >> clearColor.g
-           >> clearColor.b
-           >> ImGuiEnabled;
-        /*>> camera.Position.x
-        >> camera.Position.y
-        >> camera.Position.z
-        >> camera.Front.x
-        >> camera.Front.y
-        >> camera.Front.z;*/
-    }
-}
 
 ProgramState *programState;
 
-void DrawImGui(ProgramState *programState);
 
 int main() {
     // glfw: initialize and configure
@@ -150,24 +108,7 @@ int main() {
         return -1;
     }
 
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    //stbi_set_flip_vertically_on_load(true);
-
     programState = new ProgramState;
-    programState->LoadFromFile("resources/program_state.txt");
-    if (programState->ImGuiEnabled) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-    // Init Imgui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void) io;
-
-
-
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // configure global opengl state
     // -----------------------------
@@ -334,12 +275,12 @@ int main() {
 
     vector<std::string> faces
             {
-                    FileSystem::getPath("resources/textures/skybox/right.jpeg"),
-                    FileSystem::getPath("resources/textures/skybox/left.jpeg"),
-                    FileSystem::getPath("resources/textures/skybox/top.jpeg"),
-                    FileSystem::getPath("resources/textures/skybox/bottom.jpeg"),
-                    FileSystem::getPath("resources/textures/skybox/front.jpeg"),
-                    FileSystem::getPath("resources/textures/skybox/back.jpeg")
+                    FileSystem::getPath("resources/textures/skybox2/right.jpg"),
+                    FileSystem::getPath("resources/textures/skybox2/left.jpg"),
+                    FileSystem::getPath("resources/textures/skybox2/top.jpg"),
+                    FileSystem::getPath("resources/textures/skybox2/bottom.jpg"),
+                    FileSystem::getPath("resources/textures/skybox2/front.jpg"),
+                    FileSystem::getPath("resources/textures/skybox2/back.jpg")
             };
     unsigned int cubemapTexture = loadCubemap(faces);
 
@@ -426,9 +367,6 @@ int main() {
     shaderBloomFinal.setInt("scene",0);
     shaderBloomFinal.setInt("bloomBlur",1);
 
-    // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window)) {
@@ -447,29 +385,9 @@ int main() {
         // ------
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         glBindFramebuffer(GL_FRAMEBUFFER,hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        /*discard.use();
-        glm::mat4 projection_grass = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view_grass = programState->camera.GetViewMatrix();
-        glm::mat4 model_grass = glm::mat4(1.0f);
-        discard.setMat4("projection", projection_grass);
-        discard.setMat4("view", view_grass);
-
-
-        glBindVertexArray(transparentVAO);
-        glBindTexture(GL_TEXTURE_2D, transparentTexture);
-        for (unsigned int i = 0; i < grassLocation.size(); i++)
-        {
-            model_grass = glm::mat4(1.0f);
-            model_grass = glm::translate(model_grass, grassLocation[i]);
-            model_grass = glm::scale(model_grass,glm::vec3(glm::vec3(0.2f)));
-            discard.setMat4("model", model_grass);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }*/
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
@@ -481,7 +399,7 @@ int main() {
         ourShader.setVec3("dirLight.diffuse", 0.1f, 0.1f, 0.1f);
         ourShader.setVec3("dirLight.specular", 0.1f, 0.1f, 0.1f);
 
-        pointLight.position = glm::vec3(0.0f, -0.97f, 0.0f);
+        pointLight.position = glm::vec3(0.0f, -0.95f, 0.0f);
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -521,9 +439,7 @@ int main() {
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model,(programState->backpackPosition + glm::vec3(sin(currentFrame),0.2,cos(currentFrame)))); // translate it down so it's at the center of the scene
-        //model = glm::translate(model,(programState->backpackPosition + glm::vec3(0,0.2,0))); // translate it down so it's at the center of the scene
-
+        model = glm::translate(model,(glm::vec3(sin(currentFrame),0.2,cos(currentFrame)))); // translate it down so it's at the center of the scene
         model = glm::scale(model, glm::vec3(0.1));    // it's a bit too big for our scene, so scale it down
         model = glm::rotate(model, glm::radians(currentFrame*90),glm::vec3(0.0f,1.0f,0.0f));
         ourShader.setMat4("model", model);
@@ -667,11 +583,8 @@ int main() {
         glfwPollEvents();
     }
 
-    programState->SaveToFile("resources/program_state.txt");
     delete programState;
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glDeleteVertexArrays(1, &plainVAO);
@@ -765,52 +678,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     programState->camera.ProcessMouseScroll(yoffset);
 }
 
-void DrawImGui(ProgramState *programState) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-
-    {
-        static float f = 0.0f;
-        ImGui::Begin("Hello window");
-        ImGui::Text("Hello text");
-        ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
-        ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
-
-        ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
-        ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
-        ImGui::DragFloat("pointLight.quadratic", &programState->pointLight.quadratic, 0.05, 0.0, 1.0);
-        ImGui::End();
-    }
-
-    {
-        ImGui::Begin("Camera info");
-        const Camera& c = programState->camera;
-        ImGui::Text("Camera position: (%f, %f, %f)", c.Position.x, c.Position.y, c.Position.z);
-        ImGui::Text("(Yaw, Pitch): (%f, %f)", c.Yaw, c.Pitch);
-        ImGui::Text("Camera front: (%f, %f, %f)", c.Front.x, c.Front.y, c.Front.z);
-        ImGui::Checkbox("Camera mouse update", &programState->CameraMouseMovementUpdateEnabled);
-        ImGui::End();
-    }
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
-        programState->ImGuiEnabled = !programState->ImGuiEnabled;
-        if (programState->ImGuiEnabled) {
-            programState->CameraMouseMovementUpdateEnabled = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            programState->CameraMouseMovementUpdateEnabled = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
-    }
 
     if (key == GLFW_KEY_F && action == GLFW_PRESS){
         flashlight = !flashlight;
@@ -822,6 +690,22 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
     if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
         bloom = !bloom;
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        if (exposure > 0.0f)
+            exposure -= 0.1f;
+        else
+            exposure = 0.0f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        exposure += 0.1f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        exposure = 1.0f;
+    }
 
 }
 
@@ -855,8 +739,8 @@ unsigned int loadTexture(char const * path, bool gammaCorrection)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, dataFormat == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, dataFormat == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_SRGB_ALPHA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_SRGB_ALPHA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -870,52 +754,6 @@ unsigned int loadTexture(char const * path, bool gammaCorrection)
 
     return textureID;
 }
-
-/*unsigned int loadTexture(char const * path, bool gammaCorrection)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum internalFormat;
-        GLenum dataFormat;
-        if (nrComponents == 1)
-        {
-            internalFormat = dataFormat = GL_RED;
-        }
-        else if (nrComponents == 3)
-        {
-            internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
-            dataFormat = GL_RGB;
-        }
-        else if (nrComponents == 4)
-        {
-            internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
-            dataFormat = GL_RGBA;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, internalFormat == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, internalFormat == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
-}*/
 
 unsigned int loadCubemap(vector<std::string> faces)
 {
