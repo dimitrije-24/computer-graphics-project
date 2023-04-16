@@ -1,6 +1,7 @@
 # Night at a windmill
 This is my project for a course in Computer Graphics held at the Faculty of Mathematics, University of Belgrade.
 I used the project skeleton located at https://github.com/matf-racunarska-grafika/project_base.git and used materials found on https://learnopengl.com/, https://sketchfab.com, https://free3d.com and other similar sites on the internet.
+A video showcasing the project is available on the following link https://youtu.be/g1NPq-zd7g0.
 
 # Instructions
 1. `git clone https://github.com/dimitrije-24/computer-graphics-project.git`
